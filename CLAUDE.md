@@ -104,6 +104,26 @@ incognito-5.0/
 
 ## 📝 Living Changelog & Context History
 
+### [2026-09-30] — Flag Verification, Admin QR Scanner & Backend Sanctum
+- **Flag Verification Portal (`/validate-flag`, `/verify-flag`)**:
+  - Implemented classified cipher dossier page styled with the Godfather mafia aesthetic.
+  - Interactive cipher verification connecting to PostgreSQL backend.
+  - Dynamic visual ticket issuance with attendee name, email, citation ID, high-resolution ticket preview, and direct image download.
+  - SMTP email dispatch with ticket attachment containing personal clearance pass.
+- **Admin Gatekeeper & Optical QR Scanner (`/sanctum-gate-9x7q`)**:
+  - Moved off public `/admin` to non-guessable secure path to prevent brute-force attacks.
+  - Authentication compares input against constant SHA-256 hash (`ADMIN_PASSWORD_HASH`) with zero plaintext passwords in code. Strong password: `Godfather#90$Omerta!Vault2026`.
+  - Removed manual JWT paste inputs; now exclusively a streamlined optical camera viewfinder with HUD reticle, laser sweep, and audio feedback.
+  - Dual QR scanning engine: WebSocket frame streaming (`/ws/scan`) + client-side `BarcodeDetector`.
+  - Dynamic scan animations: Emerald & gold wax seal stamp for approved entry, blood-red denial for duplicate or invalid tickets.
+  - Live guest telemetry stats and recent scans dossier history log.
+  - Frame ingestion debounced during modal viewing to eliminate duplicate scan alerts.
+- **Backend Architecture & PostgreSQL Docker (`backend/`)**:
+  - Standalone FastAPI backend with PostgreSQL Docker container (`freshers_db`) matching schema from `sql.txt`.
+  - Secure HS256 JWT ticket generation and verification.
+  - PIL-powered Godfather VIP ticket generator and Titan Mail SMTP email dispatch (`smtp.titan.email:465`) with attached printable ticket PDF.
+  - Next.js API proxy routes for seamless production deployment on Vercel.
+
 ### [2026-09-24] — Mobile Frame Removal & Dark Overscroll
 - **Mobile Viewport Optimization**:
   - Hid `.ornate-frame` on mobile devices (`<= 768px`) via CSS `display: none !important` and updated `OrnateFrame.tsx` to omit scroll/resize handlers on mobile screens.

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
@@ -27,6 +28,10 @@ export default function RootLayout({
         <meta name="color-scheme" content="dark" />
       </head>
       <body suppressHydrationWarning>
+        <Script
+          src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
+          strategy="beforeInteractive"
+        />
         {children}
         <Analytics />
         <SpeedInsights />

@@ -1,6 +1,5 @@
 "use client";
 
-import Script from "next/script";
 import useScrollReveal from "@/lib/useScrollReveal";
 import OrnateFrame from "@/components/OrnateFrame";
 import Navigation from "@/components/Navigation";
@@ -18,11 +17,6 @@ export default function Home() {
 
   return (
     <>
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
-        strategy="beforeInteractive"
-      />
-
       <OrnateFrame />
       <div className="grain" />
       <div className="scratches" />
