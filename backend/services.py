@@ -71,17 +71,18 @@ def safe_filename(name: str) -> str:
 
 
 def _make_qr_image(payload: str, target_size: int = 240) -> Image.Image:
-    # High contrast black on white QR with border=4 for instant camera barcode detection
+    # High contrast black on white QR with border=4 for instant camera barcode detection.
+    # Uses ERROR_CORRECT_L for minimum density (largest, boldest modules) and NEAREST neighbor resampling to keep blocks ultra-crisp.
     qr = qrcode.QRCode(
         version=None,
-        box_size=4,
+        box_size=10,
         border=4,
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
     )
     qr.add_data(payload)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
-    return img.resize((target_size, target_size), Image.Resampling.LANCZOS)
+    return img.resize((target_size, target_size), Image.Resampling.NEAREST)
 
 
 def create_ticket_pdf(name: str, email: str, token: str, flag_id: Optional[int] = None) -> Tuple[str, str, str]:
@@ -114,8 +115,8 @@ def create_ticket_pdf(name: str, email: str, token: str, flag_id: Optional[int] 
     center_x = pw // 2
     center_y = int(ph * 0.52)
 
-    # QR dimensions scaled to poster size
-    qr_target = int(pw * 0.42)
+    # QR dimensions scaled to poster size (increased to 0.46 for larger, less dense modules)
+    qr_target = int(pw * 0.46)
     qr_img = _make_qr_image(token, target_size=qr_target)
 
     base_name = safe_filename(name)
@@ -123,7 +124,7 @@ def create_ticket_pdf(name: str, email: str, token: str, flag_id: Optional[int] 
     qr_path = os.path.join(QR_DIR, qr_file_name)
     qr_img.save(qr_path)
 
-    card_pad = max(8, int(pw * 0.02))
+    card_pad = max(10, int(pw * 0.022))
     card_size = qr_img.width + 2 * card_pad
     card_x = center_x - card_size // 2
     card_y = center_y - card_size // 2

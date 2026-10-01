@@ -39,25 +39,3 @@ CREATE TABLE IF NOT EXISTS tickets (
     issued_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Seed initial test users and flags for testing
-INSERT INTO users (name, email) VALUES
-('Michael Corleone', 'michael.corleone@godfather.mafia'),
-('Santino Corleone', 'sonny.corleone@godfather.mafia'),
-('Tom Hagen', 'tom.hagen@godfather.mafia'),
-('SCSDF Agent', 'freshers.scsdf@gmail.com')
-ON CONFLICT (email) DO NOTHING;
-
-INSERT INTO user_flags (user_id, flag, is_used)
-SELECT u.user_id, 'INCOGNITO{OMERTA_CORLEONE_2026}', FALSE
-FROM users u WHERE u.email = 'michael.corleone@godfather.mafia'
-AND NOT EXISTS (SELECT 1 FROM user_flags WHERE flag = 'INCOGNITO{OMERTA_CORLEONE_2026}');
-
-INSERT INTO user_flags (user_id, flag, is_used)
-SELECT u.user_id, 'INCOGNITO{DON_VITO_HONOR_KEY}', FALSE
-FROM users u WHERE u.email = 'sonny.corleone@godfather.mafia'
-AND NOT EXISTS (SELECT 1 FROM user_flags WHERE flag = 'INCOGNITO{DON_VITO_HONOR_KEY}');
-
-INSERT INTO user_flags (user_id, flag, is_used)
-SELECT u.user_id, 'INCOGNITO{GODFATHER_SPECIAL_PASS}', FALSE
-FROM users u WHERE u.email = 'mitulchowdhury042006@gmail.com'
-AND NOT EXISTS (SELECT 1 FROM user_flags WHERE flag = 'INCOGNITO{GODFATHER_SPECIAL_PASS}');

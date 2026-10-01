@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("incognito.backend")
 
-JWT_SECRET = os.getenv("JWT_SECRET", "super_secret_incognito_godfather_key_2026")
+JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 REPEAT_WINDOW_SECONDS = float(os.getenv("REPEAT_WINDOW_SECONDS", "3.0"))
 
@@ -121,26 +121,46 @@ def verify_ticket(token: str) -> dict:
         return {"status": "error", "message": f"Malformed ticket: {str(e)}", "error_code": "MALFORMED"}
 
     email = payload.get("email")
+    flag_id = payload.get("flag_id")
 
     conn = None
     try:
         conn = get_db_connection()
         with conn:
             with conn.cursor() as cur:
-                # Attempt to update unused ticket
-                cur.execute(
-                    """
-                    UPDATE tickets
-                    SET is_used = TRUE
-                    FROM users
-                    WHERE tickets.user_id = users.user_id
-                      AND users.email = %s
-                      AND tickets.is_used = FALSE
-                    RETURNING users.name, users.email, tickets.ticket_id, tickets.issued_at
-                    """,
-                    (email,),
-                )
-                row = cur.fetchone()
+                # 1. Primary check: If flag_id is in payload, update the specific ticket
+                if flag_id:
+                    cur.execute(
+                        """
+                        UPDATE tickets
+                        SET is_used = TRUE
+                        FROM users
+                        WHERE tickets.user_id = users.user_id
+                          AND tickets.flag_id = %s
+                          AND tickets.is_used = FALSE
+                        RETURNING users.name, users.email, tickets.ticket_id, tickets.issued_at
+                        """,
+                        (flag_id,),
+                    )
+                    row = cur.fetchone()
+                else:
+                    row = None
+
+                # 2. Fallback check: If no flag_id in payload, update by user email
+                if not row and email:
+                    cur.execute(
+                        """
+                        UPDATE tickets
+                        SET is_used = TRUE
+                        FROM users
+                        WHERE tickets.user_id = users.user_id
+                          AND users.email = %s
+                          AND tickets.is_used = FALSE
+                        RETURNING users.name, users.email, tickets.ticket_id, tickets.issued_at
+                        """,
+                        (email,),
+                    )
+                    row = cur.fetchone()
 
                 if row:
                     return {
@@ -153,22 +173,37 @@ def verify_ticket(token: str) -> dict:
                         "verified_at": time.strftime("%Y-%m-%d %H:%M:%S"),
                     }
 
-                # Check if ticket exists but already used
-                cur.execute(
-                    """
-                    SELECT users.name, tickets.ticket_id, tickets.issued_at
-                    FROM tickets
-                    JOIN users ON tickets.user_id = users.user_id
-                    WHERE users.email = %s
-                    """,
-                    (email,),
-                )
-                exists = cur.fetchone()
+                # 3. Check if ticket exists but already used
+                if flag_id:
+                    cur.execute(
+                        """
+                        SELECT users.name, tickets.ticket_id, tickets.issued_at
+                        FROM tickets
+                        JOIN users ON tickets.user_id = users.user_id
+                        WHERE tickets.flag_id = %s
+                        """,
+                        (flag_id,),
+                    )
+                    exists = cur.fetchone()
+                else:
+                    exists = None
+
+                if not exists and email:
+                    cur.execute(
+                        """
+                        SELECT users.name, tickets.ticket_id, tickets.issued_at
+                        FROM tickets
+                        JOIN users ON tickets.user_id = users.user_id
+                        WHERE users.email = %s
+                        """,
+                        (email,),
+                    )
+                    exists = cur.fetchone()
 
         if not exists:
             return {
                 "status": "error",
-                "message": "Invalid QR, no ticket found for this email",
+                "message": "Invalid QR, no ticket found in records",
                 "error_code": "NOT_FOUND",
             }
         return {
@@ -370,7 +405,7 @@ def validate_flag_endpoint(req: FlagValidationRequest, request: Request = None):
                     }
 
                 # 3. Generate JWT Ticket
-                exp_timestamp = int(time.time()) + (30 * 24 * 3600)  # 30 days valid
+                exp_timestamp = int(time.time()) + (10 * 24 * 3600)  # 30 days valid
                 token_payload = {
                     "email": user_email,
                     "name": user_name,
